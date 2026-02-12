@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<title>Jornal Cultural</title>
+
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Segoe UI", Arial, sans-serif;
+  background: #000;
+  color: #fff;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 25px 50px;
+  border-bottom: 1px solid #222;
+}
+
+.logo {
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: 2px;
+}
+
+nav button {
+  background: transparent;
+  border: 1px solid #fff;
+  color: #fff;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+nav button:hover {
+  background: #fff;
+  color: #000;
+}
+
+main {
+  max-width: 900px;
+  margin: 50px auto;
+  padding: 0 20px;
+}
+
+.art {
+  border: 1px solid #222;
+  padding: 25px;
+  margin-bottom: 30px;
+  transition: 0.3s;
+}
+
+.art:hover {
+  border-color: #fff;
+}
+
+.art h2 {
+  margin-bottom: 10px;
+}
+
+.art p {
+  color: #ccc;
+  line-height: 1.6;
+}
+
+#painel {
+  display: none;
+  border: 1px solid #fff;
+  padding: 25px;
+  margin-bottom: 40px;
+}
+
+#painel input,
+#painel textarea {
+  width: 100%;
+  background: #000;
+  border: 1px solid #555;
+  color: #fff;
+  padding: 10px;
+  margin-bottom: 15px;
+}
+
+#painel button {
+  background: #fff;
+  color: #000;
+  border: none;
+  padding: 10px 20px;
+  cursor: pointer;
+}
+
+footer {
+  border-top: 1px solid #222;
+  padding: 30px 50px;
+  color: #aaa;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <div class="logo">COLÉGIO TOP</div>
+  <nav>
+    <button id="loginBtn">LOGIN</button>
+  </nav>
+</header>
+
+<main>
+
+  <section id="painel">
+    <h2>Adicionar Art</h2>
+    <input type="text" id="titulo" placeholder="Título">
+    <textarea id="conteudo" rows="5" placeholder="Texto do artigo"></textarea>
+    <button id="publicar">Publicar</button>
+  </section>
+
+  <section id="arts"></section>
+
+</main>
+
+<footer>
+  <p>DEV: MIGUEL MARCOLINO</p>
+  <p>ESCRITORES: RAFAEL PACHECO | FERNANDO LUCAS</p>
+  <p>PROFESSOR(A): __________________</p>
+</footer>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup } 
+from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp } 
+from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+/* CONFIG FIREBASE */
+const firebaseConfig = {
+  apiKey: "AIzaSyBa3a3b9V4QrM8f14a5aq_dYGI6d-qw9m4",
+  authDomain: "jornal-jovem.firebaseapp.com",
+  projectId: "jornal-jovem",
+  storageBucket: "jornal-jovem.firebasestorage.app",
+  messagingSenderId: "847875379731",
+  appId: "1:847875379731:web:313770ae41dc3f0c2625e6",
+  measurementId: "G-97WGGFZ7TR"
+};
+
+/* INICIALIZAÇÃO */
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const provider = new GoogleAuthProvider();
+const db = getFirestore(app);
+
+const EMAIL_AUTORIZADO = "bernard141200@gmail.com";
+
+/* LOGIN */
+document.getElementById("loginBtn").onclick = async () => {
+  try {
+    const result = await signInWithPopup(auth, provider);
+
+    if (result.user.email === EMAIL_AUTORIZADO) {
+      document.getElementById("painel").style.display = "block";
+      alert("Modo autor ativado");
+    } else {
+      alert("Você não tem permissão");
+    }
+  } catch (error) {
+    console.error(error);
+    alert("Erro no login");
+  }
+};
+
+/* PUBLICAR */
+document.getElementById("publicar").onclick = async () => {
+  const tituloInput = document.getElementById("titulo");
+  const conteudoInput = document.getElementById("conteudo");
+
+  const titulo = tituloInput.value.trim();
+  const conteudo = conteudoInput.value.trim();
+
+  if (!titulo || !conteudo) {
+    alert("Preencha tudo");
+    return;
+  }
+
+  await addDoc(collection(db, "arts"), {
+    titulo,
+    conteudo,
+    data: serverTimestamp()
+  });
+
+  tituloInput.value = "";
+  conteudoInput.value = "";
+
+  carregarArts();
+};
+
+/* CARREGAR ARTS */
+async function carregarArts() {
+  const div = document.getElementById("arts");
+  div.innerHTML = "";
+
+  const q = query(collection(db, "arts"), orderBy("data", "desc"));
+  const snap = await getDocs(q);
+
+  snap.forEach(doc => {
+    const art = doc.data();
+    div.innerHTML += `
+      <div class="art">
+        <h2>${art.titulo}</h2>
+        <p>${art.conteudo}</p>
+      </div>
+    `;
+  });
+}
+
+carregarArts();
+</script>
+
+</body>
+</html>
